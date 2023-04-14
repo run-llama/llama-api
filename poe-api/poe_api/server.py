@@ -8,6 +8,7 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import HTMLResponse
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from poe_api import llama_handler
+from poe_api.types import AddDocumentsRequest
 from poe_api.utils import LoggingMiddleware
 from sse_starlette.sse import EventSourceResponse
 
@@ -82,6 +83,12 @@ async def poe_post(request: Dict[str, Any], dict=Depends(auth_user)) -> Response
         )
     else:
         raise HTTPException(status_code=501, detail="Unsupported request type")
+    
+@app.post("add_document")
+async def add_document(request_dict: Dict[str, Any], dict=Depends(auth_user)) -> Response:
+    request = AddDocumentsRequest.parse_obj(request_dict)
+    return await handler.handle_add_documents(request)
+
 
 @app.on_event("startup")
 async def startup():

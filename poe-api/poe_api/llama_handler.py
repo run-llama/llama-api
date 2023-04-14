@@ -6,7 +6,7 @@ Demo bot: catbot.
 from __future__ import annotations
 
 import os
-from typing import AsyncIterable, Optional, Type
+from typing import AsyncIterable, List, Optional, Sequence, Type
 
 from sse_starlette.sse import ServerSentEvent
 
@@ -14,14 +14,17 @@ from llama_index import IndexStructType
 from llama_index.indices.base import BaseGPTIndex
 from llama_index.indices.response.builder import ResponseMode
 from llama_index.indices.registry import INDEX_STRUCT_TYPE_TO_INDEX_CLASS
+from llama_index import Document as LlamaDocument
 
 from poe_api.base_handler import PoeHandler
 from poe_api.types import (
     ContentType,
+    Document,
     QueryRequest,
     ReportFeedbackRequest,
     SettingsRequest,
     SettingsResponse,
+    AddDocumentsRequest,
 )
 
 INDEX_STRUCT_TYPE_STR = os.environ.get('LLAMA_INDEX_TYPE', IndexStructType.SIMPLE_DICT.value)
@@ -42,6 +45,10 @@ EXTERNAL_VECTOR_STORE_INDEX_STRUCT_TYPES = [
 SETTINGS = SettingsResponse(
     context_clear_window_secs=60 * 60, allow_user_context_clear=True
 )
+
+
+def _to_llama_documents(docs: Sequence[Document]) -> List[LlamaDocument]:
+    return [LlamaDocument(text=doc.text, doc_id=doc.doc_id) for doc in docs]
 
 
 def _create_or_load_index(
@@ -94,3 +101,10 @@ class LlamaBotHandler(PoeHandler):
     async def get_settings(self, settings: SettingsRequest) -> SettingsResponse:
         """Return the settings for this bot."""
         return SETTINGS
+
+    async def add_documents(self, request: AddDocumentsRequest) -> SettingsResponse:
+        """Add documents."""
+        llama_docs = _to_llama_documents(request.documents)
+        nodes = self._index.service_context.node_parser.get_nodes_from_documents(llama_docs)
+        self._index.insert_nodes(nodes)
+    

@@ -1,20 +1,23 @@
 
 
 import json
+import logging
 from typing import AsyncIterable, Dict, Optional, Union
 
 from fastapi.responses import JSONResponse
 from sse_starlette.sse import ServerSentEvent
 
-from fastapi_poe.types import (
+from poe_api.types import (
     ContentType,
     QueryRequest,
     ReportErrorRequest,
     ReportFeedbackRequest,
     SettingsRequest,
     SettingsResponse,
+    AddDocumentsRequest,
 )
 
+logger = logging.getLogger("uvicorn.default")
 
 class PoeHandler:
     # Override these for your bot
@@ -34,6 +37,10 @@ class PoeHandler:
     async def on_error(self, error_request: ReportErrorRequest) -> None:
         """Override this to record errors from the Poe server."""
         logger.error(f"Error from Poe server: {error_request}")
+
+    async def add_documents(self, add_documents_request: AddDocumentsRequest) -> None:
+        """Override this to record errors from the Poe server."""
+        pass
 
     # Helpers for generating responses
 
@@ -106,3 +113,7 @@ class PoeHandler:
         async for event in self.get_response(query):
             yield event
         yield self.done_event()
+    
+    async def handle_add_documents(self, request: AddDocumentsRequest) -> JSONResponse:
+        await self.add_documents(request)
+        return JSONResponse({})
