@@ -7,10 +7,12 @@ license = "MIT"
 readme = "README.md"
 packages = [{include = "poe_api"}]
 
+[tool.poetry.scripts]
+start = "poe_api.server:start"
+
 [tool.poetry.dependencies]
 python = ">=3.8.1,<4.0"
-fastapi-poe = "^0.0.3"
-gpt_index = {path = "../../gpt_index", develop = true}
+llama_index = "^0.5.15"
 openai = "^0.27.3"
 black = "^23.3.0"
 isort = "^5.12.0"
