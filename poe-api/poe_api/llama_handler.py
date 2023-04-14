@@ -106,8 +106,9 @@ class LlamaBotHandler(PoeHandler):
         """Return an async iterator of events to send to the user."""
         last_message = query.query[-1]
         message_content = last_message.content
-        response = self._index.query(message_content)
-        yield self.text_event(response.response)
+        response = self._index.query(message_content, streaming=True)
+        for text in response.response_gen:
+            yield self.text_event(text)
 
     async def on_feedback(self, feedback: ReportFeedbackRequest) -> None:
         """Called when we receive user feedback such as likes."""
