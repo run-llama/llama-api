@@ -15,6 +15,7 @@ from llama_index import IndexStructType
 from llama_index.indices.base import BaseGPTIndex
 from llama_index.indices.response.builder import ResponseMode
 from llama_index.indices.registry import INDEX_STRUCT_TYPE_TO_INDEX_CLASS
+from llama_index.readers import SimpleDirectoryReader
 from llama_index import Document as LlamaDocument
 
 from poe_api.base_handler import PoeHandler
@@ -27,6 +28,9 @@ from poe_api.types import (
     SettingsResponse,
     AddDocumentsRequest,
 )
+
+LOAD_DATA = os.environ.get('LLAMA_INDEX_LOAD_DATA', True)
+DATA_DIR = 'data/'
 
 INDEX_STRUCT_TYPE_STR = os.environ.get('LLAMA_INDEX_TYPE', IndexStructType.SIMPLE_DICT.value)
 INDEX_JSON_PATH = os.environ.get('LLAMA_INDEX_JSON_PATH', "./index.json")
@@ -82,6 +86,14 @@ def _create_or_load_index(
         # Create empty index
         index = index_cls(nodes=[])  
         logger.info(f'Creating new index')
+
+        if LOAD_DATA:
+            logger.info(f'Loading data from {DATA_DIR}')
+            reader = SimpleDirectoryReader(input_dir=DATA_DIR)
+            documents = reader.load_data()
+            nodes = index.service_context.node_parser.get_nodes_from_documents(documents)
+            index.insert_nodes(nodes)
+
         return index
 
 
@@ -99,7 +111,7 @@ class LlamaBotHandler(PoeHandler):
 
     async def on_feedback(self, feedback: ReportFeedbackRequest) -> None:
         """Called when we receive user feedback such as likes."""
-        print(
+        logger.info(
             f"User {feedback.user_id} gave feedback on {feedback.conversation_id}"
             f"message {feedback.message_id}: {feedback.feedback_type}"
         )
