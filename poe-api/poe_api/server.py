@@ -84,7 +84,7 @@ async def poe_post(request: Dict[str, Any], dict=Depends(auth_user)) -> Response
     else:
         raise HTTPException(status_code=501, detail="Unsupported request type")
     
-@app.post("add_document")
+@app.post("/add_document")
 async def add_document(request_dict: Dict[str, Any], dict=Depends(auth_user)) -> Response:
     request = AddDocumentsRequest.parse_obj(request_dict)
     return await handler.handle_add_documents(request)
@@ -94,6 +94,11 @@ async def add_document(request_dict: Dict[str, Any], dict=Depends(auth_user)) ->
 async def startup():
     global handler
     handler = llama_handler.LlamaBotHandler()
+
+@app.on_event("shutdown")
+def shutdown():
+    handler.handle_shutdown()
+
 
 def start():
     """

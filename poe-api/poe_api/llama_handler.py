@@ -46,6 +46,8 @@ SETTINGS = SettingsResponse(
     context_clear_window_secs=60 * 60, allow_user_context_clear=True
 )
 
+SAVE_PATH = './index.json'
+
 
 def _to_llama_documents(docs: Sequence[Document]) -> List[LlamaDocument]:
     return [LlamaDocument(text=doc.text, doc_id=doc.doc_id) for doc in docs]
@@ -70,7 +72,6 @@ def _create_or_load_index(
         raise ValueError('Please use vector store directly.')
 
     index_cls = index_type_to_index_cls[index_type]
-    print(f'init with {index_cls}')
     if index_json_path is None:
         return index_cls(nodes=[])  # Create empty index
     else:
@@ -107,4 +108,9 @@ class LlamaBotHandler(PoeHandler):
         llama_docs = _to_llama_documents(request.documents)
         nodes = self._index.service_context.node_parser.get_nodes_from_documents(llama_docs)
         self._index.insert_nodes(nodes)
+    
+    def shutdown(self) -> None:
+        self._index.save_to_dict(SAVE_PATH)
+
+
     
