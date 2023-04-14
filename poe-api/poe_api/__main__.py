@@ -1,5 +1,5 @@
-from fastapi_poe import run
-from fastapi_poe.llama_bot import LlamaBotHandler
+from poe_api import run
+from poe_api.handler import LlamaBotHandler
 
 if __name__ == "__main__":
     run(LlamaBotHandler())
