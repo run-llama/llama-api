@@ -42,6 +42,9 @@ class PoeHandler:
         """Override this to record errors from the Poe server."""
         pass
 
+    def shutdown(self) -> None:
+        pass
+
     # Helpers for generating responses
 
     @staticmethod
@@ -117,3 +120,6 @@ class PoeHandler:
     async def handle_add_documents(self, request: AddDocumentsRequest) -> JSONResponse:
         await self.add_documents(request)
         return JSONResponse({})
+
+    def handle_shutdown(self) -> None:
+        self.shutdown()
