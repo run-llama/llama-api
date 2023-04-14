@@ -4,6 +4,7 @@ Demo bot: catbot.
 
 """
 from __future__ import annotations
+import logging
 
 import os
 from typing import AsyncIterable, List, Optional, Sequence, Type
@@ -28,7 +29,7 @@ from poe_api.types import (
 )
 
 INDEX_STRUCT_TYPE_STR = os.environ.get('LLAMA_INDEX_TYPE', IndexStructType.SIMPLE_DICT.value)
-INDEX_JSON_PATH = os.environ.get('LLAMA_INDEX_JSON_PATH', None)
+INDEX_JSON_PATH = os.environ.get('LLAMA_INDEX_JSON_PATH', "./index.json")
 QUERY_KWARGS_JSON_PATH = os.environ.get('LLAMA_QUERY_KWARGS_JSON_PATH', None)
 RESPONSE_MODE = os.environ.get('LLAMA_RESPONSE_MODE', ResponseMode.NO_TEXT.value)
 
@@ -46,7 +47,7 @@ SETTINGS = SettingsResponse(
     context_clear_window_secs=60 * 60, allow_user_context_clear=True
 )
 
-SAVE_PATH = './index.json'
+logger = logging.getLogger(__name__)
 
 
 def _to_llama_documents(docs: Sequence[Document]) -> List[LlamaDocument]:
@@ -72,10 +73,16 @@ def _create_or_load_index(
         raise ValueError('Please use vector store directly.')
 
     index_cls = index_type_to_index_cls[index_type]
-    if index_json_path is None:
-        return index_cls(nodes=[])  # Create empty index
-    else:
-        return index_cls.load_from_disk(index_json_path) # Load index from disk
+    try:
+        # Load index from disk
+        index = index_cls.load_from_disk(index_json_path) 
+        logger.info(f'Loading index from {index_json_path}')
+        return index
+    except IOError:
+        # Create empty index
+        index = index_cls(nodes=[])  
+        logger.info(f'Creating new index')
+        return index
 
 
 class LlamaBotHandler(PoeHandler):
@@ -85,12 +92,10 @@ class LlamaBotHandler(PoeHandler):
 
     async def get_response(self, query: QueryRequest) -> AsyncIterable[ServerSentEvent]:
         """Return an async iterator of events to send to the user."""
-
         last_message = query.query[-1]
         message_content = last_message.content
         response = self._index.query(message_content)
         yield self.text_event(response.response)
-
 
     async def on_feedback(self, feedback: ReportFeedbackRequest) -> None:
         """Called when we receive user feedback such as likes."""
@@ -110,7 +115,7 @@ class LlamaBotHandler(PoeHandler):
         self._index.insert_nodes(nodes)
     
     def shutdown(self) -> None:
-        self._index.save_to_dict(SAVE_PATH)
+        self._index.save_to_disk(INDEX_JSON_PATH)
 
 
     
