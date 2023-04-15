@@ -7,10 +7,12 @@ from __future__ import annotations
 import logging
 
 import os
-from typing import AsyncIterable, List, Optional, Sequence, Type
+from typing import AsyncIterable, List, Optional, Sequence, Tuple, Type
+from langchain import LLMChain, OpenAI
 
 from sse_starlette.sse import ServerSentEvent
 
+from langchain.chains.conversational_retrieval.prompts import CONDENSE_QUESTION_PROMPT
 from llama_index import IndexStructType
 from llama_index.indices.base import BaseGPTIndex
 from llama_index.indices.response.builder import ResponseMode
@@ -72,7 +74,7 @@ def _create_or_load_index(
     if index_type not in index_type_to_index_cls:
         raise ValueError(f'Unknown index type: {index_type}')
 
-    # TODO: support this
+    # TODO: support external vector store
     if index_type in EXTERNAL_VECTOR_STORE_INDEX_STRUCT_TYPES:
         raise ValueError('Please use vector store directly.')
 
@@ -96,19 +98,53 @@ def _create_or_load_index(
 
         return index
 
+def _get_chat_history(chat_history: List[Tuple[str, str]]) -> str:
+    buffer = ""
+    for human_s, ai_s in chat_history:
+        human = "Human: " + human_s
+        ai = "Assistant: " + ai_s
+        buffer += "\n" + "\n".join([human, ai])
+    return buffer
+
 
 class LlamaBotHandler(PoeHandler):
     def __init__(self) -> None:
         """Setup LlamaIndex."""
+        self._chat_history = {}
         self._index = _create_or_load_index()
 
     async def get_response(self, query: QueryRequest) -> AsyncIterable[ServerSentEvent]:
         """Return an async iterator of events to send to the user."""
-        last_message = query.query[-1]
-        message_content = last_message.content
-        response = self._index.query(message_content, streaming=True)
+        # Get chat history
+        chat_history = self._chat_history.get(query.conversation_id)
+        if chat_history is None:
+            chat_history = []
+            self._chat_history[query.conversation_id] = chat_history
+
+        # Get last message
+        last_message = query.query[-1].content
+
+        question_gen_model = OpenAI(temperature=0)
+        question_generator = LLMChain(
+            llm=question_gen_model,
+            prompt=CONDENSE_QUESTION_PROMPT,
+        )
+
+        chat_history_str = _get_chat_history(chat_history)
+        logger.debug(chat_history_str)
+        new_question = question_generator.run(
+            question=last_message, chat_history=chat_history_str
+        )
+        logger.info(f'Querying with: {new_question}')
+
+        response = await self._index.aquery(new_question, streaming=True)
+        full_response = ""
         for text in response.response_gen:
+            full_response += text
             yield self.text_event(text)
+        
+        chat_history.append((last_message, full_response))
+        
 
     async def on_feedback(self, feedback: ReportFeedbackRequest) -> None:
         """Called when we receive user feedback such as likes."""
