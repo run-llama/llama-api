@@ -137,7 +137,7 @@ class LlamaBotHandler(PoeHandler):
         )
         logger.info(f'Querying with: {new_question}')
 
-        response = await self._index.aquery(new_question, streaming=True)
+        response = await self._index.aquery(new_question, streaming=True, similarity_top_k=3)
         full_response = ""
         for text in response.response_gen:
             full_response += text
