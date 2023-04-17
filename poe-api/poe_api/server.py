@@ -7,12 +7,12 @@ from fastapi import Depends, FastAPI, HTTPException, Request, Response
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import HTMLResponse
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-from fastapi_poe.types import (QueryRequest, ReportErrorRequest,
-                               ReportFeedbackRequest, SettingsRequest)
 from sse_starlette.sse import EventSourceResponse
 
 from poe_api import llama_handler
-from poe_api.types import AddDocumentsRequest
+from poe_api.types import (AddDocumentsRequest, QueryRequest,
+                           ReportErrorRequest, ReportFeedbackRequest,
+                           SettingsRequest)
 from poe_api.utils import LoggingMiddleware
 
 global logger

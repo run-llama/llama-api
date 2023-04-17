@@ -16,17 +16,16 @@ from llama_index import Document as LlamaDocument
 from llama_index import IndexStructType
 from llama_index.indices.base import BaseGPTIndex
 from llama_index.indices.registry import INDEX_STRUCT_TYPE_TO_INDEX_CLASS
-from llama_index.indices.response.builder import ResponseMode
 from llama_index.readers import SimpleDirectoryReader
 from sse_starlette.sse import ServerSentEvent
 
 from poe_api.base_handler import PoeHandler
-from poe_api.types import (AddDocumentsRequest, Document,
-                           QueryRequest, ReportFeedbackRequest,
-                           SettingsRequest, SettingsResponse)
+from poe_api.types import (AddDocumentsRequest, Document, QueryRequest,
+                           ReportFeedbackRequest, SettingsRequest,
+                           SettingsResponse)
 
 LOAD_DATA = os.environ.get("LLAMA_LOAD_DATA", True)
-DATA_DIR = os.environ.get('LLAMA_DATA_DIR', "data/")
+DATA_DIR = os.environ.get("LLAMA_DATA_DIR", "data/")
 
 INDEX_STRUCT_TYPE_STR = os.environ.get(
     "LLAMA_INDEX_TYPE", IndexStructType.SIMPLE_DICT.value

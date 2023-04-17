@@ -21,15 +21,33 @@ Follow these steps to quickly setup and run the LlamaIndex bot for Poe:
 
 ### Run API Server
 * Run the API locally: `poetry run start`
+```console
+INFO:poe_api.llama_handler:Creating new index
+INFO:poe_api.llama_handler:Loading data from data/
+INFO:llama_index.token_counter.token_counter:> [insert] Total LLM token usage: 0 tokens
+INFO:llama_index.token_counter.token_counter:> [insert] Total embedding token usage: 19274 tokens
+2023-04-17 15:24:05,159 - INFO - Application startup complete.
+```
 * Make the API publicly available with [ngrok](https://ngrok.com/): in a different terminal, run `ngrok http 8080`
 
 ### Connect Poe to your Bot
-* Create your bot at https://poe.com/create_bot?api=1
+* Create your bot at https://poe.com/create_bot?api=1 
 * Interact with your bot at https://poe.com/
 
-## Customize Your LlamaIndex Poe Bot
+
+## Test Your LlamaIndex Bot
+To quickly verify if your bot is up and running, go to 
+the Swagger UI at http://localhost:8080/docs, authenticate with your `POE_API_KEY` and issue a query (satisfying the [Poe Protocol](https://github.com/poe-platform/poe-protocol/blob/main/docs/spec.md))
+
+
+Alternatively, to use a sample query, replace `<add your POE_API_KEY here>` in `Makefile` with your `POE_API_KEY`,
+then run:
+```console
+make try
+```
+
+## Customize Your LlamaIndex Bot
 By default, we ingest documents under `data/` and index them with a `GPTSimpleVectorIndex`.
-> Read more about different index types [here](https://gpt-index.readthedocs.io/en/latest/guides/primer/index_guide.html)
 
 You can configure the default behavior via environment variables:
 
@@ -53,3 +71,7 @@ and engage with the community on [discord](https://discord.com/invite/dGcwcsnxhU
 
 ## Ingesting Data
 LlamaIndex bot for Poe also exposes an API for ingesting additional data by `POST` to `/add_document` endpoint.
+
+You can use the Swagger UI to quickly experiment with ingesting additional documents:
+* Locally: `http://localhost:8080/docs`
+* Publiclly via `ngrok`: `https://<instance-id>.ngrok-free.app/docs`

@@ -9,7 +9,7 @@ try:
 	'http://0.0.0.0:8080/' \
 	-H 'accept: application/json' \
 	-H 'Content-Type: application/json' \
-	-H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c' \
+	-H 'Authorization: Bearer <add your POE_API_KEY here>' \
 	-d '{ \
 		"version": "1.0", \
 		"type": "query", \
