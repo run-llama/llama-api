@@ -1,44 +1,55 @@
-# fastapi_poe
+# Poe Knowledge Bot with LlamaIndex
 
-An implementation of the Poe protocol using FastAPI.
+An example knowledge-augmented Poe bot powered by 
+[LlamaIndex](https://gpt-index.readthedocs.io/en/latest/)
+and FastAPI.
 
-To run it:
+Easily ingest and chat with your own data!
 
-- Create a virtual environment (Python 3.7 or higher)
-- `pip install .`
-- `python -m fastapi_poe`
-- In a different terminal, run [ngrok](https://ngrok.com/) to make it publicly
-  accessible
+## Quick Start
 
-## Write your own bot
+Follow these steps to quickly setup and run the LlamaIndex bot for Poe:
+### Setup Environment
+1. Install poetry: `pip install poetry`
+2. Install app dependencies: `poetry install`
+3. Setup environment variables
 
-This package can also be used as a base to write your own bot. You can inherit from
-`fastapi_poe.PoeHandler` to make a bot:
+| Name             | Required | Description                                                                                                                                                                                |
+| ---------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `POE_API_KEY`   | Yes      | This is a secret token that you need to authenticate Poe requests to the API. You can generate this from https://poe.com/create_bot?api=1.                |
+| `OPENAI_API_KEY` | Yes      | This is your OpenAI API key that LlamaIndex needs to call OpenAI services. You can get an API key by creating an account on [OpenAI](https://openai.com/). |
 
-```python
-from fastapi_poe import PoeHandler, run
+### Run API Server
+* Run the API locally: `poetry run start`
+* Make the API publicly available with [ngrok](https://ngrok.com/): in a different terminal, run `ngrok http 8080`
 
-class EchoHandler(PoeHandler):
-    async def get_response(self, query):
-        last_message = query.query[-1].content
-        yield self.text_event(last_message)
+### Connect Poe to your Bot
+* Create your bot at https://poe.com/create_bot?api=1
+* Interact with your bot at https://poe.com/
 
-if __name__ == "__main__":
-    run(EchoHandler())
-```
+## Customize Your LlamaIndex Poe Bot
+By default, we ingest documents under `data/` and index them with a `GPTSimpleVectorIndex`.
+> Read more about different index types [here](https://gpt-index.readthedocs.io/en/latest/guides/primer/index_guide.html)
 
-## Enable authentication
+You can configure the default behavior via environment variables:
 
-Poe servers send requests containing Authorization HTTP header in the format "Bearer
-<api_key>," where api_key is the API key configured in the bot settings. \
+| Name             | Required | Description                                                                                                                                                                                |
+| ---------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `LLAMA_LOAD_DATA`   | Optional      | Whether to ingest documents in `DATA_DIR`.Defaults to `True`                |
+| `LLAMA_DATA_DIR` | Optional      | Directory to ingest initial documents from. Defaults to `data/` |
+| `LLAMA_INDEX_TYPE` | Optional      | Index type (see below for details). Defaults to `simple_dict`  |
+| `INDEX_JSON_PATH` | Optional      |  Path to saved Index json file. `save/index.json`|
 
-To validate the requests are from Poe Servers, you can either set the environment
-variable POE_API_KEY or pass the parameter api_key in the run function like:
+**Different Index Types**
+By default, we use a `GPTSimpleVectorIndex` to store document chunks in memory, 
+and retrieve top-k nodes by embedding similarity.
+Different index types are optimized for different data and query use-cases.
+See this guide on [How Each Index Works](https://gpt-index.readthedocs.io/en/latest/guides/primer/index_guide.html) to learn more.
+You can configure the index type via the `LLAMA_INDEX_TYPE`, see [here](https://gpt-index.readthedocs.io/en/latest/reference/indices/composability_query.html#gpt_index.data_structs.struct_type.IndexStructType) for the full list of accepted index type identifiers.
 
-```python
-if __name__ == "__main__":
-    run(EchoHandler(), api_key=<key>)
-```
 
-For a more advanced example that exercises more of the Poe protocol, see
-[Catbot](./src/fastapi_poe/samples/catbot.py).
+Read more details on [readthedocs](https://gpt-index.readthedocs.io/en/latest/), 
+and engage with the community on [discord](https://discord.com/invite/dGcwcsnxhU).
+
+## Ingesting Data
+LlamaIndex bot for Poe also exposes an API for ingesting additional data by `POST` to `/add_document` endpoint.

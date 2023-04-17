@@ -21,20 +21,17 @@ from llama_index.readers import SimpleDirectoryReader
 from sse_starlette.sse import ServerSentEvent
 
 from poe_api.base_handler import PoeHandler
-from poe_api.types import (AddDocumentsRequest, ContentType, Document,
+from poe_api.types import (AddDocumentsRequest, Document,
                            QueryRequest, ReportFeedbackRequest,
                            SettingsRequest, SettingsResponse)
 
-LOAD_DATA = os.environ.get("LLAMA_INDEX_LOAD_DATA", True)
-DATA_DIR = "data/"
+LOAD_DATA = os.environ.get("LLAMA_LOAD_DATA", True)
+DATA_DIR = os.environ.get('LLAMA_DATA_DIR', "data/")
 
 INDEX_STRUCT_TYPE_STR = os.environ.get(
     "LLAMA_INDEX_TYPE", IndexStructType.SIMPLE_DICT.value
 )
-INDEX_JSON_PATH = os.environ.get("LLAMA_INDEX_JSON_PATH", "./index.json")
-QUERY_KWARGS_JSON_PATH = os.environ.get("LLAMA_QUERY_KWARGS_JSON_PATH", None)
-RESPONSE_MODE = os.environ.get("LLAMA_RESPONSE_MODE", ResponseMode.NO_TEXT.value)
-
+INDEX_JSON_PATH = os.environ.get("LLAMA_INDEX_JSON_PATH", "save/index.json")
 
 EXTERNAL_VECTOR_STORE_INDEX_STRUCT_TYPES = [
     IndexStructType.DICT,
