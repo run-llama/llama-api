@@ -1,10 +1,10 @@
 # Poe Knowledge Bot with LlamaIndex
 
-An example knowledge-augmented Poe bot powered by 
+A knowledge-augmented Poe bot powered by 
 [LlamaIndex](https://gpt-index.readthedocs.io/en/latest/)
 and FastAPI.
 
-Easily ingest and chat with your own data!
+Easily ingest and chat with your own data as a knowledge base!
 
 ## Quick Start
 
