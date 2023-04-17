@@ -6,19 +6,14 @@ from typing import Any, Dict
 from fastapi import Depends, FastAPI, HTTPException, Request, Response
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import HTMLResponse
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from fastapi_poe.types import (QueryRequest, ReportErrorRequest,
+                               ReportFeedbackRequest, SettingsRequest)
+from sse_starlette.sse import EventSourceResponse
+
 from poe_api import llama_handler
 from poe_api.types import AddDocumentsRequest
 from poe_api.utils import LoggingMiddleware
-from sse_starlette.sse import EventSourceResponse
-
-from fastapi_poe.types import (
-    QueryRequest,
-    ReportErrorRequest,
-    ReportFeedbackRequest,
-    SettingsRequest,
-)
-
 
 global logger
 logger = logging.getLogger("uvicorn.default")
@@ -33,8 +28,10 @@ def exception_handler(request: Request, ex: HTTPException):
     logger.error(ex)
 
 
-def auth_user(authorization: HTTPAuthorizationCredentials = Depends(http_bearer)) -> None:
-    if authorization.scheme != "Bearer"  or authorization.credentials != BEARER_TOKEN:
+def auth_user(
+    authorization: HTTPAuthorizationCredentials = Depends(http_bearer),
+) -> None:
+    if authorization.scheme != "Bearer" or authorization.credentials != BEARER_TOKEN:
         raise HTTPException(
             status_code=401,
             detail="Invalid API key",
@@ -51,9 +48,7 @@ logger.info("Starting")
 import uvicorn.config
 
 log_config = copy.deepcopy(uvicorn.config.LOGGING_CONFIG)
-log_config["formatters"]["default"][
-    "fmt"
-] = "%(asctime)s - %(levelname)s - %(message)s"
+log_config["formatters"]["default"]["fmt"] = "%(asctime)s - %(levelname)s - %(message)s"
 
 
 @app.get("/")
@@ -64,6 +59,7 @@ async def index() -> Response:
         " is running. To connect it to Poe, create a bot at <a"
         f' href="{url}">{url}</a>.</p></body></html>'
     )
+
 
 @app.post("/")
 async def poe_post(request: Dict[str, Any], dict=Depends(auth_user)) -> Response:
@@ -78,14 +74,15 @@ async def poe_post(request: Dict[str, Any], dict=Depends(auth_user)) -> Response
             ReportFeedbackRequest.parse_obj(request)
         )
     elif request["type"] == "report_error":
-        return await handler.handle_report_error(
-            ReportErrorRequest.parse_obj(request)
-        )
+        return await handler.handle_report_error(ReportErrorRequest.parse_obj(request))
     else:
         raise HTTPException(status_code=501, detail="Unsupported request type")
-    
+
+
 @app.post("/add_document")
-async def add_document(request_dict: Dict[str, Any], dict=Depends(auth_user)) -> Response:
+async def add_document(
+    request_dict: Dict[str, Any], dict=Depends(auth_user)
+) -> Response:
     request = AddDocumentsRequest.parse_obj(request_dict)
     return await handler.handle_add_documents(request)
 
@@ -94,6 +91,7 @@ async def add_document(request_dict: Dict[str, Any], dict=Depends(auth_user)) ->
 async def startup():
     global handler
     handler = llama_handler.LlamaBotHandler()
+
 
 @app.on_event("shutdown")
 def shutdown():
@@ -110,4 +108,10 @@ def start():
     authentication.
 
     """
-    uvicorn.run("poe_api.server:app", host="0.0.0.0", port=8080, log_config=log_config, reload=True)
+    uvicorn.run(
+        "poe_api.server:app",
+        host="0.0.0.0",
+        port=8080,
+        log_config=log_config,
+        reload=True,
+    )

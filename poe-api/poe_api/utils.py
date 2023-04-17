@@ -6,6 +6,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 
 logger = logging.getLogger("uvicorn.default")
 
+
 class LoggingMiddleware(BaseHTTPMiddleware):
     async def set_body(self, request: Request):
         receive_ = await request._receive()

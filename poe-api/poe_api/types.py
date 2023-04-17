@@ -68,11 +68,12 @@ class SettingsResponse(BaseModel):
     allow_user_context_clear: bool = True
 
 
-
 class Document(BaseModel):
     doc_id: str
     text: str
 
+
 class AddDocumentsRequest(BaseModel):
     """Request parameters for an add_documents request."""
+
     documents: List[Document]
