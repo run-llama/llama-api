@@ -121,6 +121,7 @@ class LlamaBotHandler(PoeHandler):
         # Get last message
         last_message = query.query[-1].content
 
+        # Generate standalone question from conversation context and last message
         question_gen_model = OpenAI(temperature=0)
         question_generator = LLMChain(
             llm=question_gen_model,
@@ -134,6 +135,7 @@ class LlamaBotHandler(PoeHandler):
         )
         logger.info(f"Querying with: {new_question}")
 
+        # Query with standalone question
         response = await self._index.aquery(
             new_question, streaming=True, similarity_top_k=3
         )
