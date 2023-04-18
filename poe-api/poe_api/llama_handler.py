@@ -1,28 +1,29 @@
 """
-
-Demo bot: catbot.
-
+LlamaIndex Bot.
 """
 from __future__ import annotations
 
 import logging
 import os
-from typing import AsyncIterable, List, Optional, Sequence, Tuple, Type
+from typing import AsyncIterable, Sequence
 
+from fastapi.responses import JSONResponse
 from langchain import LLMChain, OpenAI
-from langchain.chains.conversational_retrieval.prompts import \
-    CONDENSE_QUESTION_PROMPT
-from llama_index import Document as LlamaDocument
-from llama_index import IndexStructType
+from langchain.chains.conversational_retrieval.prompts import CONDENSE_QUESTION_PROMPT
+from llama_index import Document as LlamaDocument, IndexStructType
 from llama_index.indices.base import BaseGPTIndex
 from llama_index.indices.registry import INDEX_STRUCT_TYPE_TO_INDEX_CLASS
 from llama_index.readers import SimpleDirectoryReader
+from poe_api.types import AddDocumentsRequest, Document
 from sse_starlette.sse import ServerSentEvent
 
-from poe_api.base_handler import PoeHandler
-from poe_api.types import (AddDocumentsRequest, Document, QueryRequest,
-                           ReportFeedbackRequest, SettingsRequest,
-                           SettingsResponse)
+from fastapi_poe.base import PoeHandler
+from fastapi_poe.types import (
+    QueryRequest,
+    ReportFeedbackRequest,
+    SettingsRequest,
+    SettingsResponse,
+)
 
 LOAD_DATA = os.environ.get("LLAMA_LOAD_DATA", True)
 DATA_DIR = os.environ.get("LLAMA_DATA_DIR", "data/")
@@ -48,14 +49,14 @@ SETTINGS = SettingsResponse(
 logger = logging.getLogger(__name__)
 
 
-def _to_llama_documents(docs: Sequence[Document]) -> List[LlamaDocument]:
+def _to_llama_documents(docs: Sequence[Document]) -> list[LlamaDocument]:
     return [LlamaDocument(text=doc.text, doc_id=doc.doc_id) for doc in docs]
 
 
 def _create_or_load_index(
-    index_type_str: Optional[str] = None,
-    index_json_path: Optional[str] = None,
-    index_type_to_index_cls: Optional[dict[str, Type[BaseGPTIndex]]] = None,
+    index_type_str: str | None = None,
+    index_json_path: str | None = None,
+    index_type_to_index_cls: dict[str, type[BaseGPTIndex]] | None = None,
 ) -> BaseGPTIndex:
     """Create or load index from json path."""
     index_json_path = index_json_path or INDEX_JSON_PATH
@@ -78,10 +79,10 @@ def _create_or_load_index(
         index = index_cls.load_from_disk(index_json_path)
         logger.info(f"Loading index from {index_json_path}")
         return index
-    except IOError:
+    except OSError:
         # Create empty index
         index = index_cls(nodes=[])
-        logger.info(f"Creating new index")
+        logger.info("Creating new index")
 
         if LOAD_DATA:
             logger.info(f"Loading data from {DATA_DIR}")
@@ -95,7 +96,7 @@ def _create_or_load_index(
         return index
 
 
-def _get_chat_history(chat_history: List[Tuple[str, str]]) -> str:
+def _get_chat_history(chat_history: list[tuple[str, str]]) -> str:
     buffer = ""
     for human_s, ai_s in chat_history:
         human = "Human: " + human_s
@@ -124,8 +125,7 @@ class LlamaBotHandler(PoeHandler):
         # Generate standalone question from conversation context and last message
         question_gen_model = OpenAI(temperature=0)
         question_generator = LLMChain(
-            llm=question_gen_model,
-            prompt=CONDENSE_QUESTION_PROMPT,
+            llm=question_gen_model, prompt=CONDENSE_QUESTION_PROMPT
         )
 
         chat_history_str = _get_chat_history(chat_history)
@@ -157,7 +157,7 @@ class LlamaBotHandler(PoeHandler):
         """Return the settings for this bot."""
         return SETTINGS
 
-    async def add_documents(self, request: AddDocumentsRequest) -> SettingsResponse:
+    async def add_documents(self, request: AddDocumentsRequest) -> None:
         """Add documents."""
         llama_docs = _to_llama_documents(request.documents)
         nodes = self._index.service_context.node_parser.get_nodes_from_documents(
@@ -165,5 +165,10 @@ class LlamaBotHandler(PoeHandler):
         )
         self._index.insert_nodes(nodes)
 
-    def shutdown(self) -> None:
+    async def handle_add_documents(self, request: AddDocumentsRequest) -> JSONResponse:
+        await self.add_documents(request)
+        return JSONResponse({})
+
+    def handle_shutdown(self) -> None:
+        """Save index upon shutdown."""
         self._index.save_to_disk(INDEX_JSON_PATH)

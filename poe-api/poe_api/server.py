@@ -3,17 +3,22 @@ import logging
 import os
 from typing import Any, Dict
 
+import uvicorn.config
 from fastapi import Depends, FastAPI, HTTPException, Request, Response
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import HTMLResponse
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from poe_api import llama_handler
+from poe_api.types import AddDocumentsRequest
+from poe_api.utils import LoggingMiddleware
 from sse_starlette.sse import EventSourceResponse
 
-from poe_api import llama_handler
-from poe_api.types import (AddDocumentsRequest, QueryRequest,
-                           ReportErrorRequest, ReportFeedbackRequest,
-                           SettingsRequest)
-from poe_api.utils import LoggingMiddleware
+from fastapi_poe.types import (
+    QueryRequest,
+    ReportErrorRequest,
+    ReportFeedbackRequest,
+    SettingsRequest,
+)
 
 global logger
 logger = logging.getLogger("uvicorn.default")
@@ -45,7 +50,6 @@ app.add_exception_handler(RequestValidationError, exception_handler)
 # Uncomment this line to print out request and response
 app.add_middleware(LoggingMiddleware)
 logger.info("Starting")
-import uvicorn.config
 
 log_config = copy.deepcopy(uvicorn.config.LOGGING_CONFIG)
 log_config["formatters"]["default"]["fmt"] = "%(asctime)s - %(levelname)s - %(message)s"
